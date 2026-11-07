@@ -18,3 +18,11 @@ Image: `ghcr.io/bon5co/poste:2.5.22`, built by GitHub Actions on push to `main`.
 
 Poste.io is a product of Analogic; this repo only wraps their image. MIT licence covers the wrapper
 files, not the upstream software.
+
+## Why the image is flattened
+
+Upstream's layers delete Pro-only files with OCI whiteouts and opaque directories. Railway's runtime
+does not apply them: `/opt/admin/src/API/Controller/LogController.php` and
+`/opt/admin/config/services_pro.yaml` reappear, Symfony fails to compile (missing `App\Pro\*`
+classes), `doctrine:schema:update` never runs and the admin API answers 500. The Dockerfile copies
+the merged upstream filesystem into a single `scratch` layer, which has no whiteouts to ignore.
