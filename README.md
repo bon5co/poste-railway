@@ -26,3 +26,9 @@ does not apply them: `/opt/admin/src/API/Controller/LogController.php` and
 `/opt/admin/config/services_pro.yaml` reappear, Symfony fails to compile (missing `App\Pro\*`
 classes), `doctrine:schema:update` never runs and the admin API answers 500. The Dockerfile copies
 the merged upstream filesystem into a single `scratch` layer, which has no whiteouts to ignore.
+
+## p0f
+
+Upstream runs `p0f` (sender OS fingerprinting) as an s6 service. It needs `CAP_NET_RAW`, which Railway
+does not grant, so it aborted and restarted every second, flooding the logs. `rootfs/etc/services.d/p0f/run`
+now idles and logs one line instead. Mail flow is unchanged: the p0f socket never existed on Railway.

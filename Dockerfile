@@ -20,7 +20,7 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     DISABLE_CLAMAV=TRUE
 COPY entrypoint.sh /usr/local/bin/railway-entrypoint.sh
 COPY rootfs/ /
-RUN chmod +x /usr/local/bin/railway-entrypoint.sh /etc/services.d/railway-bootstrap/run
+RUN chmod +x /usr/local/bin/railway-entrypoint.sh /etc/services.d/railway-bootstrap/run /etc/services.d/p0f/run
 VOLUME ["/data"]
 EXPOSE 8080 25 465 587 143 993 110 995 4190
 ENTRYPOINT ["/usr/local/bin/railway-entrypoint.sh"]

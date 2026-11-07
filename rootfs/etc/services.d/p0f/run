@@ -1,0 +1,7 @@
+#!/usr/bin/with-contenv bash
+# p0f (passive OS fingerprinting of inbound SMTP peers) needs CAP_NET_RAW to open the interface, which
+# Railway containers do not get. Upstream's run script then aborts and s6 restarts it every second,
+# which buries the real logs. Without the capability it never produced a socket anyway, so idle
+# instead of crash-looping.
+echo "[railway] p0f needs CAP_NET_RAW, not available on Railway; sender OS fingerprinting is off"
+exec sleep infinity
