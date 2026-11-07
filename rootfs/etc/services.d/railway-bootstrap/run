@@ -1,0 +1,40 @@
+#!/usr/bin/with-contenv bash
+# Answers Poste.io's install wizard once, from POSTE_HOSTNAME, POSTE_ADMIN_EMAIL and the admin
+# secret variable. The wizard is "finished" when /data/server.ini exists, so a redeploy with the
+# volume attached skips all of this. Without the secret the wizard is left for the browser.
+INI=/data/server.ini
+BASE="http://127.0.0.1:${HTTP_PORT:-8080}"
+JAR=/tmp/poste-bootstrap.jar
+
+idle() { exec sleep infinity; }
+
+[ -f "$INI" ] && { echo "[railway-bootstrap] server.ini present, install already done"; idle; }
+if [ -z "${POSTE_ADMIN_PASSWORD:-}" ]; then
+  echo "[railway-bootstrap] POSTE_ADMIN_PASSWORD not set, leaving the install wizard to the browser"
+  idle
+fi
+
+HOST="${POSTE_HOSTNAME:-${RAILWAY_PUBLIC_DOMAIN:-$(hostname)}}"
+ADMIN="${POSTE_ADMIN_EMAIL:-admin@${HOST}}"
+
+for attempt in $(seq 1 60); do
+  rm -f "$JAR"
+  FORM="$(curl -s -c "$JAR" "$BASE/admin/install/server")"
+  TOKEN="$(printf '%s' "$FORM" | sed -n 's/.*name="install\[_token\]" value="\([^"]*\)".*/\1/p' | head -1)"
+  if [ -n "$TOKEN" ]; then
+    CODE="$(curl -s -b "$JAR" -c "$JAR" -o /dev/null -w '%{http_code}' -X POST "$BASE/admin/install/server" \
+      --data-urlencode "install[hostname]=${HOST}" \
+      --data-urlencode "install[superAdmin]=${ADMIN}" \
+      --data-urlencode "install[superAdminPassword]=${POSTE_ADMIN_PASSWORD}" \
+      --data-urlencode "install[_token]=${TOKEN}")"
+    if [ -f "$INI" ]; then
+      echo "[railway-bootstrap] installed: hostname=${HOST} admin=${ADMIN} (HTTP ${CODE})"
+      rm -f "$JAR"
+      idle
+    fi
+    echo "[railway-bootstrap] attempt ${attempt}: install POST answered HTTP ${CODE}, server.ini not written"
+  fi
+  sleep 3
+done
+echo "[railway-bootstrap] gave up after 60 attempts; finish the wizard in the browser"
+idle
